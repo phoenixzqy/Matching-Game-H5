@@ -1,9 +1,10 @@
 const STATUS = {
-    EMPTY_CELL: -1,
-    MATCHED: 0,
-    UNMATCHED: 1,
+    EMPTY_CELL: "empty",
+    MATCHED: "matched",
+    UNMATCHED: "unmatched",
 };
 const EMPTY_VALUE = '*';
+const MAX_TURNS = 2;
 /**
  * a collection of helpers
  */
@@ -18,15 +19,23 @@ const helpers = {
         }
         return a;
     },
-    calculateTurns: function (last, current, next, turns) {
-        if (last.x === current.x && current.x !== next.x) {
-            return turns + 1;
+    calculateTurns: function (path) {
+        var turns = 0;
+        if (path.length <= 2) {
+            console.log("calculateTurns", 0);
+            return turns;
         }
-        if (last.y === current.y && current.y !== next.y) {
-            return turns + 1;
+        for (var i = 2; i < path.length; i++) {
+            // compare current one with previous 2
+
+            if (
+                (path[i - 2].x === path[i - 1].x && path[i].x !== path[i - 1].x) ||
+                (path[i - 2].y === path[i - 1].y && path[i].y !== path[i - 1].y)
+            ) turns++;
         }
         return turns;
-    }
+    },
+
 };
 
 function Coordinate(x, y) {
@@ -48,7 +57,7 @@ function Cell(coordinate, value, status, element) {
     this.value = value;
     this.element = element;
     this.status = status;
-
+// TODO: listen setter of status to change element.
     this.shouldShow = function () {
         return this.status === STATUS.UNMATCHED;
     };
@@ -132,7 +141,7 @@ function Game(m, n) {
                     status = STATUS.UNMATCHED;
                 }
                 var cellNode = this.createCellNode(x, y, value, status);
-                this.map[x][y] = new Cell(new Coordinate(x, y), value, cellNode, status);
+                this.map[x][y] = new Cell(new Coordinate(x, y), value, status, cellNode);
                 rowNode.appendChild(cellNode);
             }
             tableNode.appendChild(rowNode);
@@ -148,6 +157,9 @@ function Game(m, n) {
         node.setAttribute('status', status);
         node.innerText = value;
         node.addEventListener('click', function (event) {
+            if (this.getAttribute('status') != STATUS.UNMATCHED) {
+                return;
+            }
             if (!that.selectedNode) {
                 // select the first one
                 that.selectedNode = this;
@@ -160,15 +172,16 @@ function Game(m, n) {
                 var y2 = parseInt(this.getAttribute('y'));
                 var cell1 = that.map[x1][y1];
                 var cell2 = that.map[x2][y2];
+
                 if (that.matchTwoCells(cell1, cell2)) {
                     // matched, then hide both cells from map
                     console.log("matched");
                 } else {
                     console.log("unmatched");
                     // unmatched, cancel the selection
-                    that.selectedNode = null;
                     // TODO: css
                 }
+                that.selectedNode = null;
             }
         })
         return node;
@@ -176,68 +189,53 @@ function Game(m, n) {
 
     // game logic/controller
     this.matchTwoCells = function (cell1, cell2) {
-        return this.matchRecursively(cell1.coordinate, cell1.coordinate, cell2.coordinate, 0);
+        if(cell1.isMatched(cell2)) {
+            return this.findPathRecursively(cell1.coordinate, cell1.coordinate, cell2.coordinate, []);
+        }
+        return false;
     };
     // helper method to recursively find the path with at most 2 turns
-    this.matchRecursively = function (last, current, target, turns) {
+    this.findPathRecursively = function (last, current, target, path) {
+        var deepCopiedPath = [];
+        path.forEach(item => {
+            deepCopiedPath.push(new Coordinate(item.x, item.y))
+        });
+        deepCopiedPath.push(new Coordinate(current.x, current.y));
+        var turns = helpers.calculateTurns(deepCopiedPath);
         // if reach the out of border or turns too many times
         if (
-            turns > 2 ||
-            current.x >= m + 3 || current.x < 0 ||
-            current.y >= n + 3 || current.y < 0
+            turns > MAX_TURNS ||
+            current.x >= this.m + 3 || current.x < 0 ||
+            current.y >= this.n + 3 || current.y < 0
         ) return false;
         // if 2 are not matched
         var currentCell = this.map[current.x][current.y];
         var targetCell = this.map[target.x][target.y];
-        console.log(current,target)
-        if (current.isEqual(target)) {
+        if (targetCell.status === STATUS.UNMATCHED && current.isEqual(target)) {
             // reach the target coordinate, then try to match cells
+            if (currentCell.isMatched(targetCell))
+                console.log("Found the path: ", deepCopiedPath);
             return currentCell.isMatched(targetCell);
-        } else if (!currentCell.isWalkable()) {
+        } else if (!current.isEqual(last) && !currentCell.isWalkable()) {
+            console.log("current", currentCell, currentCell.isWalkable())
             return false;
         } else {
             // continue
-            var next;
-            if (last.isEqual(current)) {
-                // at the start point.
-                // try all 4 directions
-                next = new Coordinate(current.x, current.y + 1); // top
-                if (this.matchRecursively(current, next, target, 1, [])) {
+            var directions = [
+                new Coordinate(current.x, current.y + 1), // top
+                new Coordinate(current.x, current.y - 1), // bottom
+                new Coordinate(current.x - 1, current.y), // left
+                new Coordinate(current.x + 1, current.y), // right
+            ];
+            for (var d in directions) {
+                if (last.isEqual(directions[d])) {
+                    continue;
+                }
+                if (this.findPathRecursively(current, directions[d], target, deepCopiedPath)) {
                     return true;
                 }
-                next = new Coordinate(current.x, current.y - 1); // bottom
-                if (this.matchRecursively(current, next, target, 1, [])) {
-                    return true;
-                }
-                next = new Coordinate(current.x - 1, current.y); // left
-                if (this.matchRecursively(current, next, target, 1, [])) {
-                    return true;
-                }
-                next = new Coordinate(current.x + 1, current.y); // right
-                if (this.matchRecursively(current, next, target, 1, [])) {
-                    return true;
-                }
-                return false;
-            } else {
-                // try 3 directions except the last one;
-                next = new Coordinate(current.x, current.y + 1); // top
-                if (!next.isEqual(last) && this.matchRecursively(current, next, target, helpers.calculateTurns(last, current, next, turns), [])) {
-                    return true;
-                }
-                next = new Coordinate(current.x, current.y - 1); // bottom
-                if (!next.isEqual(last) && this.matchRecursively(current, next, target, helpers.calculateTurns(last, current, next, turns), [])) {
-                    return true;
-                }
-                next = new Coordinate(current.x - 1, current.y); // left
-                if (!next.isEqual(last) && this.matchRecursively(current, next, target, helpers.calculateTurns(last, current, next, turns), [])) {
-                    return true;
-                }
-                next = new Coordinate(current.x + 1, current.y); // right
-                if (!next.isEqual(last) && this.matchRecursively(current, next, target, helpers.calculateTurns(last, current, next, turns), [])) {
-                    return true;
-                }
-                return false;
             }
+            return false;
         }
     };
     // for testing
