@@ -304,7 +304,7 @@ function Game(m, n) {
     node.setAttribute("value", value);
     node.setAttribute("status", status);
     node.innerText = value;
-    if (value !== EMPTY_VALUE) {
+      if (status !== STATUS.EMPTY_CELL) {
       node.addEventListener("click", function(event) {
         var currentCell =
           that.map[parseInt(this.getAttribute("x"))][
