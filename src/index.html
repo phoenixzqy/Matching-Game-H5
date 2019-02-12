@@ -2,25 +2,34 @@
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title></title>
-        <meta name="description" content="A number/image matching game based on
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <meta name="description" content="A number/image matching game based on
         JS and Html5">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="./style/style.css">
-    </head>
-    <body>
-        <!--[if lt IE 7]>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style/style.css">
+</head>
+
+<body>
+    <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <div id="game">
-            <table id="map"></table>
+    <div id="game">
+        <div id="board">Pairs Left: <span id="pairs-left"></span></div>
+        <table id="map"></table>
+        <div id="menu">
+            <button onclick="game.start()">New Game</button>
         </div>
-        
-        <script src="./js/game.js" async defer></script>
-    </body>
+    </div>
+
+    <script src="js/game.js" async defer></script>
+</body>
+
 </html>
