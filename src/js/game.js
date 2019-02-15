@@ -279,7 +279,6 @@ function Game(m, n) {
       }
     }
   };
-  // TODO: need to guarantee the game is always has at least one solution.
   // Maybe create a BOT to solve it after the map generated?
   this.drawMap = function() {
     var tableNode = document.querySelector("#map");
@@ -297,7 +296,6 @@ function Game(m, n) {
   };
   this.createCellNode = function(x, y, value, status) {
     var that = this;
-    // TODO: add events, and etc...
     var node = document.createElement("td");
     node.setAttribute("x", x);
     node.setAttribute("y", y);
